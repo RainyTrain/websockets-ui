@@ -1,3 +1,5 @@
+import Websocket from 'ws';
+
 export enum WebsocketCommandType {
   REG = 'reg',
   CREATE_GAME = 'create_game',
@@ -13,6 +15,8 @@ export enum WebsocketCommandType {
 export type Commands = {
   [T in WebsocketCommandType]?: (...args: any[]) => unknown;
 };
+
+export type ExtendedWebsocket = Websocket & { playerId?: string | number };
 
 export interface PlayerResponse {
   type: WebsocketCommandType.REG;

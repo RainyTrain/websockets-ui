@@ -1,7 +1,8 @@
-interface Player {
+export interface Player {
   id: string | number;
   name: string;
   password: string;
+  wins: number;
 }
 
 export class Players {
@@ -13,7 +14,7 @@ export class Players {
 
   createPlayer(data: Player) {
     if (!this.players.some((player) => player.id === data.id)) {
-      const player = { ...data };
+      const player: Player = { ...data };
       this.players.push(player);
 
       return player;
@@ -25,5 +26,15 @@ export class Players {
     if (index) {
       this.players.splice(index, 1);
     }
+  }
+
+  showWinners() {
+    return this.players.sort((a, b) => a.wins + b.wins);
+  }
+
+  getPlayerById(id: string | number) {
+    const player = this.players.find((player) => player.id === id);
+
+    return player;
   }
 }
