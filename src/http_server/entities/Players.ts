@@ -13,18 +13,34 @@ export class Players {
   }
 
   createPlayer(data: Player) {
-    if (!this.players.some((player) => player.id === data.id)) {
-      const player: Player = { ...data };
-      this.players.push(player);
+    try {
+      const player = this.players.find((player) => player.id === data.id);
 
-      return player;
+      if (player) {
+        return player;
+      }
+
+      const newPlayer: Player = { ...data, wins: 0 };
+
+      this.players.push(newPlayer);
+
+      return newPlayer;
+    } catch (error) {
+      return new Error('Error while creating player');
     }
   }
 
   deleteUser(id: string | number) {
-    const index = this.players.findIndex((player) => player.id === id);
-    if (index) {
+    try {
+      const index = this.players.findIndex((player) => player.id === id);
+
+      if (!index) {
+        throw new Error('User does not exist');
+      }
+
       this.players.splice(index, 1);
+    } catch (error) {
+      return error as Error;
     }
   }
 
@@ -33,8 +49,30 @@ export class Players {
   }
 
   getPlayerById(id: string | number) {
-    const player = this.players.find((player) => player.id === id);
+    try {
+      const player = this.players.find((player) => player.id === id);
 
-    return player;
+      if (!player) {
+        throw new Error('Player does not exist');
+      }
+
+      return player;
+    } catch (error) {
+      return error as Error;
+    }
+  }
+
+  incrementPlayerWin(id: string) {
+    try {
+      const player = this.players.find((player) => player.id === id);
+
+      if (!player) {
+        throw new Error('Player does not exist');
+      }
+
+      player.wins++;
+    } catch (error) {
+      return error as Error;
+    }
   }
 }
