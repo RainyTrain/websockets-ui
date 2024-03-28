@@ -62,7 +62,7 @@ export class Players {
     }
   }
 
-  incrementPlayerWin(id: string) {
+  incrementPlayerWin(id: string | number) {
     try {
       const player = this.players.find((player) => player.id === id);
 

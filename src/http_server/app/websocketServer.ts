@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { jsonHandler } from '../helpers/deepStringify';
 import { Rooms } from '../entities/Room';
 import { Ships } from '../entities/Ships';
+import { AttackRequest, Game } from '../entities/Game';
 
 export class WebsocketServerClass {
   server: WebSocketServer;
@@ -12,6 +13,7 @@ export class WebsocketServerClass {
   players: Players;
   rooms: Rooms;
   ships: Ships;
+  game: Game;
 
   constructor() {
     this.server = this.createWebsocketServer();
@@ -19,6 +21,7 @@ export class WebsocketServerClass {
     this.players = new Players();
     this.rooms = new Rooms();
     this.ships = new Ships();
+    this.game = new Game();
     this.server.on('connection', this.handleConnection.bind(this));
   }
 
@@ -52,6 +55,8 @@ export class WebsocketServerClass {
       [WebsocketCommandType.CREATE_ROOM]: this.createRoom.bind(this),
       [WebsocketCommandType.ADD_USER_TO_ROOM]: this.addUserToRoom.bind(this),
       [WebsocketCommandType.ADD_SHIPS]: this.addShips.bind(this),
+      [WebsocketCommandType.ATTACK]: this.attack.bind(this),
+      [WebsocketCommandType.RANDOM_ATTACK]: this.randomAttack.bind(this),
     };
 
     return commands[data.type as WebsocketCommandType]!(data, socket);
@@ -165,14 +170,14 @@ export class WebsocketServerClass {
     });
 
     const playersId = this.rooms.showRoomMembers(roomIndex)?.map((user) => user.id);
-    console.log(playersId,'playersId')
+    console.log(playersId, 'playersId');
 
     if (playersId?.length != 2) {
       return;
     }
 
     const game = this.rooms.createGame(roomIndex);
-    console.log(game,'game')
+    console.log(game, 'game');
 
     this.server.clients.forEach((client: ExtendedWebsocket) => {
       if (playersId?.includes(client.playerId!) && game?.gameId) {
@@ -205,6 +210,11 @@ export class WebsocketServerClass {
     }
 
     const roomPlayers = this.rooms.showRoomMembers(gameIndex);
+
+    if (!roomPlayers) {
+      return;
+    }
+
     const roomPlayerslayersId = roomPlayers!.map((user) => user.id);
 
     this.server.clients.forEach((client: ExtendedWebsocket) => {
@@ -218,6 +228,212 @@ export class WebsocketServerClass {
               data: {
                 ships: this.ships.findShipsByPlayersId(playerGameId as string),
                 currentPlayerIndex: playerGameId,
+              },
+              id: 0,
+            },
+            'stringify',
+          ),
+        );
+      }
+    });
+
+    const newGame = this.game.createNewGame(
+      gameIndex,
+      roomPlayers!.map((roomPlayer) => roomPlayer.idPlayer!),
+    );
+
+    const { turnId } = newGame;
+
+    if (!turnId) {
+      return;
+    }
+
+    this.server.clients.forEach((client: ExtendedWebsocket) => {
+      if (roomPlayerslayersId.includes(client.playerId!)) {
+        client.send(
+          jsonHandler(
+            {
+              type: WebsocketCommandType.TURN,
+              data: {
+                currentPlayer: turnId,
+              },
+              id: 0,
+            },
+            'stringify',
+          ),
+        );
+      }
+    });
+  }
+
+  attack(data: any, socket: ExtendedWebsocket) {
+    const attackData = JSON.parse(data.data) as AttackRequest;
+
+    const roomPlayers = this.rooms.showRoomMembers(attackData.gameId);
+
+    if (!roomPlayers) {
+      return;
+    }
+
+    const game = this.game.getGameById(attackData.gameId);
+
+    if (attackData.indexPlayer !== game?.turnId) {
+      console.log('Не твоя очередь');
+      return;
+    }
+
+    const enemiesShips = this.ships
+      .getPlayersShipsByGameId(attackData.gameId)
+      .find((player) => player.indexPlayer != attackData.indexPlayer)?.ships;
+
+    if (!enemiesShips) {
+      return;
+    }
+
+    const isCellAvailable = this.game.isCellAvailable(game.gameId, game.turnId, {
+      x: attackData.x,
+      y: attackData.y,
+    });
+
+    console.log(isCellAvailable, 'isCellAvailable');
+
+    if (!isCellAvailable) {
+      console.log('Клетка уже занята');
+      return;
+    }
+
+    const attack = this.game.attack(attackData, enemiesShips);
+
+    console.log('After attack', game?.status);
+
+    const roomPlayerslayersId = roomPlayers!.map((user) => user.id);
+
+    this.server.clients.forEach((client: ExtendedWebsocket) => {
+      if (roomPlayerslayersId.includes(client.playerId!)) {
+        attack?.forEach((attack) => {
+          client.send(
+            JSON.stringify({
+              type: WebsocketCommandType.ATTACK,
+              data: JSON.stringify({
+                position: { ...attack?.position },
+                currentPlayer: attack?.playerId,
+                status: attack?.status,
+              }),
+              id: 0,
+            }),
+          );
+        });
+
+        client.send(
+          jsonHandler(
+            {
+              type: WebsocketCommandType.TURN,
+              data: {
+                currentPlayer: game.turnId,
+              },
+              id: 0,
+            },
+            'stringify',
+          ),
+        );
+      }
+    });
+
+    if (game.winPlayer) {
+      const winnersId = roomPlayers.find((player) => player.idPlayer == game.winPlayer)?.id;
+      this.players.incrementPlayerWin(winnersId!);
+      const winners = this.players.showWinners();
+
+      this.server.clients.forEach((client: ExtendedWebsocket) => {
+        if (roomPlayerslayersId.includes(client.playerId!)) {
+          client.send(
+            jsonHandler(
+              {
+                type: WebsocketCommandType.FINISH,
+                data: {
+                  winPlayer: game.winPlayer,
+                },
+                id: 0,
+              },
+              'stringify',
+            ),
+          );
+        }
+        client.send(
+          jsonHandler(
+            {
+              type: WebsocketCommandType.UPDATE_WINNERS,
+              data: winners,
+              id: 0,
+            },
+            'stringify',
+          ),
+        );
+      });
+    }
+
+    if (game?.status === 'finish') {
+      console.log('game has finished');
+    }
+  }
+
+  randomAttack(data: any, socket: ExtendedWebsocket) {
+    const { gameId, indexPlayer } = JSON.parse(data.data);
+
+    const roomPlayers = this.rooms.showRoomMembers(gameId);
+
+    if (!roomPlayers) {
+      return;
+    }
+
+    const game = this.game.getGameById(gameId);
+
+    const enemiesShips = this.ships
+      .getPlayersShipsByGameId(gameId)
+      .find((player) => player.indexPlayer != indexPlayer)?.ships;
+
+    if (!enemiesShips) {
+      return;
+    }
+
+    const cell = this.game.getRandomAvailableCell(gameId, indexPlayer);
+
+    const isCellAvailable = this.game.isCellAvailable(gameId, indexPlayer, cell);
+
+    console.log(isCellAvailable, 'indexPlayer');
+
+    if (!isCellAvailable) {
+      return;
+    }
+
+    const attack = this.game.attack({ gameId, indexPlayer, x: cell.x, y: cell.y }, enemiesShips);
+
+    console.log('After attack', game?.status);
+
+    const roomPlayerslayersId = roomPlayers!.map((user) => user.id);
+
+    this.server.clients.forEach((client: ExtendedWebsocket) => {
+      if (roomPlayerslayersId.includes(client.playerId!)) {
+        attack?.forEach((attack) => {
+          client.send(
+            JSON.stringify({
+              type: WebsocketCommandType.ATTACK,
+              data: JSON.stringify({
+                position: { ...attack?.position },
+                currentPlayer: attack?.playerId,
+                status: attack?.status,
+              }),
+              id: 0,
+            }),
+          );
+        });
+
+        client.send(
+          jsonHandler(
+            {
+              type: WebsocketCommandType.TURN,
+              data: {
+                currentPlayer: game?.turnId,
               },
               id: 0,
             },

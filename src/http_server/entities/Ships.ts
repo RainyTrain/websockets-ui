@@ -1,11 +1,10 @@
-type ShipDirection = 'horizontal' | 'vertical';
-
 type ShipType = 'small' | 'medium' | 'large' | 'huge';
 
-interface Ship {
+export interface Ship {
   position: { x: number; y: number };
-  direction: ShipDirection;
+  direction: boolean;
   length: number;
+  health?: number;
   type: ShipType;
 }
 
@@ -23,10 +22,12 @@ export class Ships {
   }
 
   setPlayersShips(playersShips: PlayersShips) {
+    playersShips.ships.forEach((ship) => (ship.health = ship.length));
+
     this.ships.push(playersShips);
   }
 
-  findShipsByPlayersId(id: string) {
+  findShipsByPlayersId(id: string | number) {
     return this.ships.find((ship) => ship.indexPlayer === id)?.ships;
   }
 

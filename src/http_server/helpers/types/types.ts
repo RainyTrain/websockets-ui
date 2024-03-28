@@ -12,6 +12,7 @@ export enum WebsocketCommandType {
   UPDATE_WINNERS = 'update_winners',
   ADD_USER_TO_ROOM = 'add_user_to_room',
   ADD_SHIPS = 'add_ships',
+  RANDOM_ATTACK = 'randomAttack',
 }
 
 export type Commands = {
