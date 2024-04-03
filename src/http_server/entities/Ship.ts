@@ -31,8 +31,14 @@ export class Ships {
     return this.ships.find((ship) => ship.indexPlayer === id)?.ships;
   }
 
-  getPlayersShipsByGameId(id: string | number) {
-    const ships = this.ships.filter((ship) => ship.gameId === id);
+  getPlayersShips(gameId: string | number) {
+    return this.ships.filter((ship) => ship.gameId === gameId);
+  }
+
+  getEnemiesShipsByGameId(gameId: string | number, currentPlayersId: string | number) {
+    const ships = this.getPlayersShips(gameId).find(
+      (playersShips) => playersShips.indexPlayer !== currentPlayersId,
+    )?.ships;
 
     return ships;
   }

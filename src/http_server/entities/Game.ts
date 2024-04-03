@@ -1,4 +1,4 @@
-import { Ship } from './Ships';
+import { Ship } from './Ship';
 
 export type AttackRequest = {
   gameId: number | string;
@@ -54,8 +54,6 @@ export class Game {
     playersId: Array<string | number>,
     activeTurn?: string | number,
   ) {
-    console.log(status, 'status');
-
     if (status === 'start') {
       const index = Math.round(Math.random());
 
@@ -95,12 +93,22 @@ export class Game {
 
       if (
         (direction && x == data.x && data.y >= y && data.y <= y + length - 1) ||
-        (y == data.y && data.x >= x && data.x <= x + length)
+        (!direction && y == data.y && data.x >= x && data.x <= x + length - 1)
       ) {
         ships[index].health! = ships[index].health! - 1;
         status = ships[index].health! > 0 ? 'shot' : 'killed';
 
         if (status === 'killed') {
+          for (let i = 0; i <= ships[index].length - 1; i++) {
+            if ((direction && data.y !== y + i) || (!direction && data.x !== x + i)) {
+              attacks.push({
+                playerId: data.indexPlayer,
+                status: 'killed',
+                position: direction ? { x: data.x, y: y + i } : { x: x + i, y: data.y },
+              });
+            }
+          }
+
           const cells = this.cellsArounsShip(ships[index]);
 
           ships.splice(index, 1);

@@ -2,7 +2,7 @@ export interface Player {
   id: string | number;
   name: string;
   password: string;
-  wins: number;
+  wins?: number;
 }
 
 export class Players {
@@ -14,7 +14,7 @@ export class Players {
 
   createPlayer(data: Player) {
     try {
-      const player = this.players.find((player) => player.id === data.id);
+      const player = this.players.find((player) => player.id == data.id);
 
       if (player) {
         return player;
@@ -45,7 +45,7 @@ export class Players {
   }
 
   showWinners() {
-    return this.players.sort((a, b) => a.wins + b.wins);
+    return this.players.sort((a, b) => a.wins! + b.wins!);
   }
 
   getPlayerById(id: string | number) {
@@ -64,13 +64,13 @@ export class Players {
 
   incrementPlayerWin(id: string | number) {
     try {
-      const player = this.players.find((player) => player.id === id);
+      const player = this.getPlayerById(id);
 
-      if (!player) {
+      if (!player || player instanceof Error) {
         throw new Error('Player does not exist');
       }
 
-      player.wins++;
+      player.wins!++;
     } catch (error) {
       return error as Error;
     }

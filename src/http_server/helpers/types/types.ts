@@ -21,22 +21,66 @@ export type Commands = {
 
 export type ExtendedWebsocket = Websocket & { playerId?: string | number };
 
-export interface PlayerResponse {
-  type: WebsocketCommandType.REG;
+export interface RegResponse {
   data: {
     name: string;
-    index: number | string;
+    index: string | number;
     error: boolean;
     errorText: string;
   };
-  id: 0;
+}
+
+export interface UpdateWinnersResponse {
+  data: Array<{ name: string; wins: number }>;
+}
+
+export interface CreateGameResponse {
+  data: { idGame: string | number; idPlayer: string | number };
 }
 
 export interface UpdateRoomResponse {
-  type: WebsocketCommandType.UPDATE_ROOM;
   data: Array<{
     roomId: number | string;
     roomUsers: Array<{ name: string; index: number | string }>;
   }>;
-  id: 0;
 }
+
+export interface StartGameResponse {
+  data: {
+    ships: Array<{
+      position: { x: number; y: number };
+      direction: boolean;
+      length: number;
+      type: 'small' | 'medium' | 'large' | 'huge';
+    }>;
+  };
+}
+
+export interface AttackResponse {
+  data: {
+    ships: Array<{
+      position: { x: number; y: number };
+      direction: boolean;
+      length: number;
+      type: 'small' | 'medium' | 'large' | 'huge';
+    }>;
+  };
+}
+
+export interface TurnResponse {
+  data: { currentPlayer: string | number };
+}
+
+export interface FinishResponse {
+  data: { winPlayer: string | number };
+}
+
+export type WebsocketMessage =
+  | RegResponse
+  | UpdateWinnersResponse
+  | CreateGameResponse
+  | UpdateRoomResponse
+  | StartGameResponse
+  | AttackResponse
+  | TurnResponse
+  | FinishResponse;
