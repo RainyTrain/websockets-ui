@@ -1,0 +1,16 @@
+{
+  "gameId": "5c36d229-e7a6-4ca5-8a39-acb7d9d3c18f",
+  "ships": [
+    { "position": { "x": 1, "y": 6 }, "direction": false, "type": "huge", "length": 4 },
+    { "position": { "x": 6, "y": 3 }, "direction": false, "type": "large", "length": 3 },
+    { "position": { "x": 4, "y": 1 }, "direction": true, "type": "large", "length": 3 },
+    { "position": { "x": 7, "y": 0 }, "direction": true, "type": "medium", "length": 2 },
+    { "position": { "x": 3, "y": 8 }, "direction": true, "type": "medium", "length": 2 },
+    { "position": { "x": 7, "y": 5 }, "direction": true, "type": "medium", "length": 2 },
+    { "position": { "x": 0, "y": 3 }, "direction": false, "type": "small", "length": 1 },
+    { "position": { "x": 2, "y": 4 }, "direction": false, "type": "small", "length": 1 },
+    { "position": { "x": 6, "y": 8 }, "direction": true, "type": "small", "length": 1 },
+    { "position": { "x": 1, "y": 1 }, "direction": false, "type": "small", "length": 1 }
+  ],
+  "indexPlayer": "2e9f7440-9f78-4f08-84fa-debbc0204eb7"
+}
